@@ -1,0 +1,32 @@
+version: '3.4'
+
+services:
+  db:
+    restart: unless-stopped
+    image: postgres:12.2-alpine
+    ports:
+      - "5432"
+    env_file: ./.env
+    volumes:
+    - dbdata:/var/lib/postgresql/data
+
+  web:
+    env_file: ./.env
+    volumes:
+      - ./app:/user/app
+    depends_on:
+      - db
+    build:
+      context: .
+      args:
+        MODE: dev
+        DOCKER_USER: 998
+    image: fastapi_example:latest
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "/user/scripts/wait-for-psql.sh db &&
+               uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+
+volumes:
+  dbdata:
